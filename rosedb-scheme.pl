@@ -38,4 +38,23 @@ for my $f (@files) {
   eval { require $f } or say $!;
 }
 
-say Dumper \%INC;
+# Find Rose::DB classes.
+my @pkgs;
+{
+  no strict 'refs';
+  my %visited;
+  my $f; $f = sub($$) {
+    my ($pkgs, $prefix) = @_;
+    return if $prefix eq '::main::';
+    for my $pkg (keys %{$pkgs}) {
+      $pkg = $prefix.$pkg;
+      if ($pkg =~ /::$/ && not exists $visited{$pkg}) {
+        $visited{$pkg} = 1;
+        my ($clean) = ($pkg =~ /^::(.*?)::$/);
+        say $clean if $clean->isa('Koala::Model::Base');
+        $f->(\%{$pkg}, $pkg);
+      }
+    }
+  };
+  $f->(\%::, '::');
+}
